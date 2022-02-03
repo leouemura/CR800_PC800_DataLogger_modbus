@@ -1,0 +1,100 @@
+'CR800 Series Datalogger
+
+'To create a different opening program template, type in new
+'instructions and select Template | Save as Default Template
+'date:
+'program author: Cristiano C. da Silva
+
+'Declare Public Variables
+'Example:
+'SequentialMode 
+Public PTemp, batt_volt
+Public TempContato1            'Pt100 de contato
+Public HBr1
+Public HBr2
+Public TempContato2            'Pt100 de contato
+Public RS1
+Public RS2
+Public RScomp1
+Public RScomp2
+Public ML01_RAd
+Public ML020_Rad
+Public WTB_Chuva
+Public Results0(3)
+Public Results1(2)
+Public Results2(1)
+Public Results3(1)
+Alias Results0(1)=AirTemperature_act
+Alias Results0(2)=RelHumidity_act
+Alias Results0(3)=RelAirPressure
+Alias Results1(2)=GlobalRadiation_act
+Alias Results2(1)=WindSpeed_act
+Alias Results3(1)=WindDirection_act
+
+Units TempContato1=Deg C
+Units TempContato2=Deg C
+Units ML01_RAd=W/m2
+Units ML020_Rad=umol/s/m^2
+Units batt_volt=Volts
+Units PTemp=Deg C
+Units WTB_Chuva=mm
+Units AirTemperature_act=C
+Units RelHumidity_act=%
+Units WindSpeed_act=m/s
+Units WindDirection_act=Deg
+Units GlobalRadiation_act=W/m2
+
+Const alfa=3.9080*10^-3
+Const beta=-5.8019*10^-7
+
+'Define Data Tables
+DataTable (Tabela1,1,-1)
+	DataInterval (0,1,Min,10)
+	Sample (1,PTemp,FP2)
+	Sample (1,batt_volt,FP2)
+	Sample (1,ML01_RAd,IEEE4)
+	Sample (1,ML020_Rad,IEEE4)
+	Sample (1,TempContato1,IEEE4)
+	Sample (1,TempContato2,IEEE4)
+	Totalize (1,WTB_Chuva,FP2,False)
+	Sample (1,AirTemperature_act,IEEE4)
+	Sample (1,RelHumidity_act,IEEE4)
+	Sample (1,WindSpeed_act,IEEE4)
+	Sample (1,WindDirection_act,IEEE4)
+	Sample (1,RelAirPressure,IEEE4)
+	Sample (1,GlobalRadiation_act,IEEE4)
+	EndTable
+DataTable(Tabela2,True,-1)
+DataInterval(0,60,Min,10)
+Totalize(1,WTB_Chuva,FP2,False)
+EndTable
+'Main Program
+BeginProg
+	Scan (10,Sec,1,0)
+		PanelTemp (PTemp,_60Hz)
+		Battery (batt_volt)
+		VoltDiff (ML01_RAd,1,AutoRange,1,True ,0,_60Hz,23.4741,0)
+		If ML01_RAd<0 Then ML01_RAd=0
+		VoltDiff (ML020_Rad,1,AutoRange,2,True ,0,_60Hz,218.3406,0)
+		
+		BrHalf (HBr1,1,mV2500,5,Vx1,1,2500,True,0,_60Hz,1.0,0)
+		RS1=100*(HBr1/(1.0-HBr1))
+		RScomp1=RS1-1.9
+		TempContato1=(-alfa+SQR(alfa^2-4*beta*(-RScomp1/100+1)))/(2*beta)
+		BrHalf (HBr2,1,mV2500,6,Vx2,1,2500,True,0,_60Hz,1.0,0)
+		RS2=100*(HBr2/(1.0-HBr2))
+		RScomp2=RS2-2
+		TempContato2=(-alfa+SQR(alfa^2-4*beta*(-RScomp2/100+1)))/(2*beta)
+		PulseCount (WTB_Chuva,1,1,2,0,0.2,0)
+    SDI12Recorder (Results0(),3,0,"R0!",1.0,0)
+    SDI12Recorder (Results1(),3,0,"R1!",1.0,0)
+    SDI12Recorder (Results2(),3,0,"R2!",1.0,0)
+    SDI12Recorder (Results3(),3,0,"R3!",1.0,0)
+     
+    'Enter other measurement instructions
+		'Call Output Tables
+		'Example:
+		CallTable Tabela1
+		CallTable Tabela2
+	NextScan
+EndProg
