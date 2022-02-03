@@ -1,13 +1,12 @@
 'CR800 Series Datalogger
 
-'To create a different opening program template, type in new
-'instructions and select Template | Save as Default Template
-'date:
-'program author: Cristiano C. da Silva
+'program author: Leonardo Uemura
+'email: leonardo.y.uemura@gmail.com
 
 'Declare Public Variables
 'Example:
 'SequentialMode 
+Public Modbus()
 Public PTemp, batt_volt
 Public TempContato1            'Pt100 de contato
 Public HBr1
@@ -69,7 +68,13 @@ DataInterval(0,60,Min,10)
 Totalize(1,WTB_Chuva,FP2,False)
 EndTable
 'Main Program
+
 BeginProg
+    'Use SerialOpen to set RS232 options for Modbus Slave Instruction
+    SerialOpen(COM1,115200,3,0,1000)
+    'Modbus Slave Instruction
+    ModbusSlave(COM1,115200,1,Modbus(),ModbusCoil(),2)
+
 	Scan (10,Sec,1,0)
 		PanelTemp (PTemp,_60Hz)
 		Battery (batt_volt)
@@ -96,5 +101,21 @@ BeginProg
 		'Example:
 		CallTable Tabela1
 		CallTable Tabela2
+
+    'Copy values/measurements to Modbus Array
+        Modbus(1)=PTemp
+        Modbus(2)=batt_volt
+        Modbus(3)=ML01_RAd
+        Modbus(4)=ML020_Rad
+        Modbus(5)=TempContato1
+        Modbus(6)=TempContato2
+        Modbus(7)=WTB_Chuva
+        Modbus(8)=AirTemperature_act
+        Modbus(9)=RelHumidity_act
+        Modbus(10)=WindSpeed_act
+        Modbus(11)=WindDirection_act
+        Modbus(12)=RelAirPressure
+        Modbus(13)=GlobalRadiation_act
 	NextScan
 EndProg
+
